@@ -51,7 +51,7 @@ func mainHandle(w http.ResponseWriter, req *http.Request) {
 
 func TestMainHandlerWhenCountMoreThanTotal(t *testing.T) {
 	totalCount := 4
-	req := httptest.NewRequest("GET", "/cafe?count=10&city=moscow", nil) // здесь нужно создать запрос к сервису
+	req := httptest.NewRequest(http.MethodGet, "/cafe?count=10&city=moscow", nil) // здесь нужно создать запрос к сервису
 
 	responseRecorder := httptest.NewRecorder()
 	handler := http.HandlerFunc(mainHandle)
@@ -63,13 +63,13 @@ func TestMainHandlerWhenCountMoreThanTotal(t *testing.T) {
 	body := responseRecorder.Body.String()
 	list := strings.Split(body, ",")
 
-	require.NotEmpty(t, body)                       // проверка, тело ответа не пустое
-	assert.Len(t, len(list), totalCount)            // проверка, длина тела соответствует ожидаемой
-	assert.GreaterOrEqual(t, len(list), totalCount) // проверка, количество кафе в запросе больше или равно чем в параметре count
+	require.NotEmpty(t, body)            // проверка, тело ответа не пустое
+	assert.Len(t, len(list), totalCount) // проверка, длина тела соответствует ожидаемой
+
 }
 
 func TestMainHandlerWhenCityStatusBadRequest(t *testing.T) {
-	req := httptest.NewRequest("GET", "/cafe?count=10&city=omsk", nil) //город omsk, который передаётся в параметре city, не поддерживается
+	req := httptest.NewRequest(http.MethodGet, "/cafe?count=10&city=omsk", nil) //город omsk, который передаётся в параметре city, не поддерживается
 
 	responseRecorder := httptest.NewRecorder()
 	handler := http.HandlerFunc(mainHandle)
@@ -78,4 +78,21 @@ func TestMainHandlerWhenCityStatusBadRequest(t *testing.T) {
 	body := responseRecorder.Body.String()
 	assert.Equal(t, responseRecorder.Code, http.StatusBadRequest) //проверка, сервис возвращает код ответа 400 и ошибку wrong city value в теле ответа.
 	assert.Equal(t, body, "wrong city value")                     //проверка, сервис возвращает ошибку wrong city value в теле ответа.
+}
+
+func TestMainHandlerWhenCorrectRequest(t *testing.T) {
+	totalCount := 4
+	req := httptest.NewRequest(http.MethodGet, "/cafe?count=3&city=moscow", nil) //
+
+	responseRecorder := httptest.NewRecorder()
+	handler := http.HandlerFunc(mainHandle)
+	handler.ServeHTTP(responseRecorder, req)
+
+	require.Equal(t, responseRecorder.Code, http.StatusOK) //проверка, запрос сформирован корректно, сервис возвращает код ответа 200
+
+	body := responseRecorder.Body.String()
+	list := strings.Split(body, ",")
+
+	require.NotEmpty(t, body)            // проверка, тело ответа не пустое
+	assert.Len(t, len(list), totalCount) // проверка, длина тела соответствует ожидаемой
 }
